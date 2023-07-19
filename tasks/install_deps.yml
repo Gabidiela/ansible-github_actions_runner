@@ -116,4 +116,5 @@
   when: (ansible_distribution == "RedHat") or
         (ansible_distribution == "CentOS") or
         (ansible_distribution == "Fedora") or
+        (ansible_distribution == "OracleLinux") or
         (ansible_distribution == "Rocky")
