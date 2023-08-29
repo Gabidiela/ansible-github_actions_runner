@@ -98,7 +98,7 @@
   ansible.builtin.command: "./svc.sh install {{ runner_user }}"
   args:
     chdir: "{{ runner_dir }}"
-  become: "{{ 'false' if ansible_system == 'Darwin' else 'true' }}"
+  become: true
   when: not runner_service_file_path.stat.exists
 
 - name: Read service name from file
@@ -112,22 +112,13 @@
     chdir: "{{ runner_dir }}"
   no_log: "{{ hide_sensitive_logs | bool }}"
   ignore_errors: "{{ ansible_check_mode }}"
-  when: ansible_system != 'Darwin' and runner_state|lower == "started" and ansible_facts.services[(runner_service.content | b64decode) | trim ]['state'] != 'running'
-
-- name: START and enable Github Actions Runner service (macOS) # TODO: Idempotence
-  ansible.builtin.command: "./svc.sh start"
-  args:
-    chdir: "{{ runner_dir }}"
-  become: false
-  no_log: "{{ hide_sensitive_logs | bool }}"
-  ignore_errors: "{{ ansible_check_mode }}"
-  when: ansible_system == 'Darwin' and runner_state|lower
+  when: ansible_system == 'Linux' and runner_state|lower == "started" and ansible_facts.services[(runner_service.content | b64decode) | trim ]['state'] != 'running'
 
 - name: STOP and disable Github Actions Runner service
   ansible.builtin.shell: "./svc.sh stop"
   args:
     chdir: "{{ runner_dir }}"
-  become: "{{ 'false' if ansible_distribution == 'MacOS' else 'true' }}"
+  become: true 
   no_log: "{{ hide_sensitive_logs | bool }}"
   ignore_errors: "{{ ansible_check_mode }}"
   when: runner_state|lower == "stopped"
@@ -140,7 +131,7 @@
       ./svc.sh start
   args:
     chdir: "{{ runner_dir }}"
-  become: "{{ 'false' if ansible_system == 'Darwin' else 'true' }}"
+  become: true
   no_log: "{{ hide_sensitive_logs | bool }}"
   ignore_errors: "{{ ansible_check_mode }}"
   when: runner_version not in runner_installed.stdout and not runner_state|lower == "stopped"

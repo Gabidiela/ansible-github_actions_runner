@@ -13,7 +13,7 @@
     when: runner_org | bool
 
   - name: Get registration token (RUN ONCE)
-    ansible.builtin.uri:
+    ansible.windows.win_uri:
       url: "{{ github_full_api_url }}/registration-token"
       headers:
         Authorization: "token {{ access_token }}"
@@ -21,34 +21,40 @@
       method: POST
       status_code: 201
       force_basic_auth: yes
+      return_content: true
     register: registration
     run_once: true
 
-  - name: Check currently registered runners for repo (RUN ONCE)
-    ansible.builtin.uri:
+  - name: Check currently registered runners for repo or org (RUN ONCE)
+    ansible.windows.win_uri:
       url: "{{ github_full_api_url }}"
       headers:
         Authorization: "token {{ access_token }}"
         Accept: "application/vnd.github.v3+json"
       method: GET
       status_code: 200
+      return_content: true
       force_basic_auth: yes
     register: registered_runners
     run_once: true
 
+  - debug:
+      msg: "{{ registered_runners.json.runners|map(attribute='name')|list }}"
+
   - name: Get Runner User IDs
-    ansible.builtin.command: id -u "{{ runner_user }}"
+    ansible.windows.win_whoami:
     changed_when: false
-    register: runner_user_id
+    register: runner_user_id #use with runner_user_id.sid
 
   - name: Get Runner Group IDs
-    ansible.builtin.command: id -g "{{ runner_user }}"
+    ansible.windows.win_whoami:
     changed_when: false
-    register: runner_user_group_id
-
+    register: runner_user_group_id #use with runner_user_group_id.sid
+    
   - name: Set runner_system variable
     ansible.builtin.set_fact:
-      runner_system: "{{ 'osx' if ansible_system == 'Darwin' else 'linux' }}"
+      runner_system: "{{ 'win' }}"
+    when: ansible_system == "Win32NT"
 
   - name: Find the latest runner version (RUN ONCE)
     ansible.builtin.uri:
@@ -66,7 +72,7 @@
     delegate_to: localhost
     when: runner_version == "latest"
 
-  - name: Get systemd service facts
-    ansible.builtin.service_facts:
-    register: service_facts
-    when: ansible_system == "Linux"
+  # - name: Get systemd service facts
+  #   ansible.builtin.service_facts:
+  #   register: service_facts
+  #   when: ansible_system == "Linux"
