@@ -64,6 +64,9 @@
     register: api_response
     run_once: true
     become: false
+    until: "api_response is not failed"
+    retries: 5
+    delay: 10
     delegate_to: localhost
     when: runner_version == "latest"
 
